@@ -1,25 +1,4 @@
-import java.util.Properties
-import org.gradle.api.GradleException
-
 version = 1
-
-fun requireTmdbApiKey(): String {
-    val localPropertiesFile = rootProject.file("local.properties")
-    if (!localPropertiesFile.exists()) {
-        throw GradleException(
-            "Missing local.properties. Create it from local.properties.example and set TMDB_API."
-        )
-    }
-
-    val properties = Properties().apply {
-        localPropertiesFile.inputStream().use(::load)
-    }
-
-    return properties.getProperty("TMDB_API")
-        ?.trim()
-        ?.takeIf { it.isNotEmpty() }
-        ?: throw GradleException("Missing TMDB_API in local.properties.")
-}
 
 android {
     namespace = "com.onurcvncs3"
@@ -28,20 +7,15 @@ android {
         buildConfig = true
         viewBinding = true
     }
-
-    defaultConfig {
-        val tmdbApi = requireTmdbApiKey()
-        buildConfigField("String", "TMDB_API", "\"$tmdbApi\"")
-    }
 }
 
 cloudstream {
-    description = "[!] Requires Setup\n- Allows you to use any Stremio addon by pasting their manifest.json url"
+    description = "[!] Requires Setup\n- Add your TMDB API key and Stremio manifest.json URLs from plugin settings"
     authors = listOf("onrcvndev", "Hexated", "phisher98", "erynith")
     status = 1
     tvTypes = listOf("TvSeries", "Movie", "Torrent")
     requiresResources = true
-    language = "en"
+    language = "tr"
     iconUrl = "https://files.catbox.moe/ol63rm.png"
 }
 

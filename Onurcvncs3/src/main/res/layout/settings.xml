@@ -29,6 +29,22 @@
             android:padding="5dp" />
     </LinearLayout>
 
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:text="TMDB API Key"
+        android:textStyle="bold" />
+
+    <EditText
+        android:id="@+id/tmdb_api_key_input"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Enter your TMDB API key"
+        android:inputType="textVisiblePassword"
+        android:padding="8dp"
+        android:singleLine="true" />
+
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"

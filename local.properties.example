@@ -1,5 +1,2 @@
-# Copy these values into local.properties before building.
 # sdk.dir is optional if your Android SDK is already discoverable.
-
-TMDB_API=your_tmdb_api_key
 # sdk.dir=/Users/yourname/Library/Android/sdk

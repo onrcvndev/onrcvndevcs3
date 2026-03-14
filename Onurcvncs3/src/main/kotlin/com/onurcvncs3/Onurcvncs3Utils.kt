@@ -9,6 +9,9 @@ import org.json.JSONObject
 import java.text.SimpleDateFormat
 import java.util.Locale
 
+const val PREF_TMDB_API_KEY = "tmdb_api_key"
+const val TMDB_LANGUAGE = "tr-TR"
+
 fun String.fixSourceUrl(): String {
     return replace("/manifest.json", "").replace("stremio://", "https://")
 }

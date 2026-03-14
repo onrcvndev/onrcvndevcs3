@@ -11,13 +11,15 @@
 
 ## Setup
 
-Create a `local.properties` file in the project root based on `local.properties.example`, then set:
+Each user must add their own TMDB API key after installing the plugin:
 
-```properties
-TMDB_API=your_tmdb_api_key
-```
+1. Install the `.cs3` plugin file in Cloudstream.
+2. Open plugin settings.
+3. Enter your TMDB API key.
+4. Add one or more Stremio addon `manifest.json` URLs.
+5. Save and restart the app.
 
-`TMDB_API` is required. The Gradle build fails early if it is missing or blank.
+For local development, `local.properties` is only needed if Android SDK discovery is not already configured via environment variables.
 
 ## Build
 
@@ -34,8 +36,9 @@ To generate plugin metadata as well:
 
 1. Install the generated `.cs3` plugin file.
 2. Open the plugin settings inside Cloudstream.
-3. Add one or more Stremio addon `manifest.json` URLs.
-4. Save and restart the app when prompted.
+3. Enter your TMDB API key.
+4. Add one or more Stremio addon `manifest.json` URLs.
+5. Save and restart the app when prompted.
 
 Example accepted inputs:
 
@@ -46,6 +49,7 @@ Example accepted inputs:
 
 - This is not a full Stremio client replacement.
 - Playback depends on the addon providing stream results.
+- TMDB metadata is fetched in Turkish (`tr-TR`).
 - Catalogue-only addons can still show metadata but may return `No link found` during playback.
 
 ## Attribution

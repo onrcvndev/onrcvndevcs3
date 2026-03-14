@@ -42,11 +42,14 @@ import com.lagradost.cloudstream3.utils.loadExtractor
 import com.lagradost.cloudstream3.utils.newExtractorLink
 import com.onurcvncs3.SubsExtractors.invokeOpenSubs
 import com.onurcvncs3.SubsExtractors.invokeWatchsomuch
+import java.net.URLEncoder
+import java.nio.charset.StandardCharsets
 import java.time.LocalDate
 
 class Onurcvncs3Provider(private val sharedPref: SharedPreferences) : TmdbProvider() {
     override var mainUrl = "https://example.com"
     override var name = "Stremio"
+    override var lang = "tr"
     override val hasMainPage = true
     override val hasQuickSearch = true
     override val supportedTypes = setOf(TvType.Movie, TvType.TvSeries, TvType.Torrent)
@@ -55,7 +58,6 @@ class Onurcvncs3Provider(private val sharedPref: SharedPreferences) : TmdbProvid
         const val TRACKER_LIST_URL =
             "https://raw.githubusercontent.com/ngosang/trackerslist/master/trackers_best.txt"
         private const val TMDB_API_BASE = "https://api.themoviedb.org/3"
-        private const val API_KEY = BuildConfig.TMDB_API
 
         fun getType(type: String?): TvType {
             return when (type) {
@@ -72,35 +74,61 @@ class Onurcvncs3Provider(private val sharedPref: SharedPreferences) : TmdbProvid
         }
     }
 
+    private fun getTmdbApiKey(): String? {
+        return sharedPref.getString(PREF_TMDB_API_KEY, null)
+            ?.trim()
+            ?.takeIf { it.isNotEmpty() }
+    }
+
+    private fun requireTmdbApiKey(): String {
+        return getTmdbApiKey()
+            ?: throw ErrorLoadingException("TMDB API key ayarlanmamis. Eklenti ayarlarindan ekleyin.")
+    }
+
+    private fun buildTmdbUrl(path: String, vararg params: Pair<String, String?>): String {
+        val encodedParams = buildList {
+            add("api_key=${encodeQueryValue(requireTmdbApiKey())}")
+            add("language=${encodeQueryValue(TMDB_LANGUAGE)}")
+            params.forEach { (key, value) ->
+                if (!value.isNullOrBlank()) {
+                    add("${encodeQueryValue(key)}=${encodeQueryValue(value)}")
+                }
+            }
+        }.joinToString("&")
+
+        val separator = if (path.contains("?")) "&" else "?"
+        return "$TMDB_API_BASE$path$separator$encodedParams"
+    }
+
+    private fun encodeQueryValue(value: String): String {
+        return URLEncoder.encode(value, StandardCharsets.UTF_8.toString())
+    }
+
     @RequiresApi(Build.VERSION_CODES.O)
     override val mainPage = run {
         val categories = mutableListOf<Pair<String, String>>()
         val currentMonth = LocalDate.now().monthValue
 
-        categories += "$TMDB_API_BASE/trending/all/day?api_key=$API_KEY&region=US" to "Trending"
-        categories += "$TMDB_API_BASE/movie/popular?api_key=$API_KEY&region=US" to "Popular Movies"
+        categories += "/trending/all/day?region=US" to "Trendler"
+        categories += "/movie/popular?region=US" to "Populer Filmler"
         if (currentMonth == 11 || currentMonth == 12) {
-            categories += "$TMDB_API_BASE/discover/movie?api_key=$API_KEY&with_keywords=207317&region=US" to
-                "Christmas Movies"
+            categories += "/discover/movie?with_keywords=207317&region=US" to "Noel Filmleri"
         }
         if (currentMonth == 10) {
-            categories += "$TMDB_API_BASE/discover/movie?api_key=$API_KEY&with_genres=27&region=US" to
-                "Halloween Horror Movies"
+            categories += "/discover/movie?with_genres=27&region=US" to "Cadilar Bayrami Korku Filmleri"
         }
-        categories += "$TMDB_API_BASE/tv/popular?api_key=$API_KEY&region=US&with_original_language=en" to
-            "Popular TV Shows"
-        categories += "$TMDB_API_BASE/tv/airing_today?api_key=$API_KEY&region=US&with_original_language=en" to
-            "Airing Today TV Shows"
-        categories += "$TMDB_API_BASE/discover/tv?api_key=$API_KEY&with_networks=213" to "Netflix"
-        categories += "$TMDB_API_BASE/discover/tv?api_key=$API_KEY&with_networks=1024" to "Amazon Prime"
-        categories += "$TMDB_API_BASE/discover/tv?api_key=$API_KEY&with_networks=2739" to "Disney+"
-        categories += "$TMDB_API_BASE/discover/tv?api_key=$API_KEY&with_networks=453" to "Hulu"
-        categories += "$TMDB_API_BASE/discover/tv?api_key=$API_KEY&with_networks=2552" to "Apple TV+"
-        categories += "$TMDB_API_BASE/discover/tv?api_key=$API_KEY&with_networks=49" to "HBO Max"
-        categories += "$TMDB_API_BASE/discover/tv?api_key=$API_KEY&with_networks=4330" to "Paramount+"
-        categories += "$TMDB_API_BASE/movie/top_rated?api_key=$API_KEY&region=US" to "Top Rated Movies"
-        categories += "$TMDB_API_BASE/tv/top_rated?api_key=$API_KEY&region=US" to "Top Rated TV Shows"
-        categories += "$TMDB_API_BASE/movie/upcoming?api_key=$API_KEY&region=US" to "Upcoming Movies"
+        categories += "/tv/popular?region=US&with_original_language=en" to "Populer Diziler"
+        categories += "/tv/airing_today?region=US&with_original_language=en" to "Bugun Yayinda Olan Diziler"
+        categories += "/discover/tv?with_networks=213" to "Netflix"
+        categories += "/discover/tv?with_networks=1024" to "Amazon Prime"
+        categories += "/discover/tv?with_networks=2739" to "Disney+"
+        categories += "/discover/tv?with_networks=453" to "Hulu"
+        categories += "/discover/tv?with_networks=2552" to "Apple TV+"
+        categories += "/discover/tv?with_networks=49" to "HBO Max"
+        categories += "/discover/tv?with_networks=4330" to "Paramount+"
+        categories += "/movie/top_rated?region=US" to "En Yuksek Puanli Filmler"
+        categories += "/tv/top_rated?region=US" to "En Yuksek Puanli Diziler"
+        categories += "/movie/upcoming?region=US" to "Yaklasan Filmler"
 
         mainPageOf(*categories.toTypedArray())
     }
@@ -119,7 +147,7 @@ class Onurcvncs3Provider(private val sharedPref: SharedPreferences) : TmdbProvid
         val adultQuery =
             if (settingsForProvider.enableAdult) "" else "&without_keywords=190370|13059|226161|195669|190370"
         val type = if (request.data.contains("/movie")) "movie" else "tv"
-        val home = app.get("${request.data}$adultQuery&page=$page")
+        val home = app.get(buildTmdbUrl("${request.data}$adultQuery", "page" to page.toString()))
             .parsedSafe<Results>()
             ?.results
             ?.mapNotNull { media ->
@@ -142,7 +170,12 @@ class Onurcvncs3Provider(private val sharedPref: SharedPreferences) : TmdbProvid
 
     override suspend fun search(query: String, page: Int): SearchResponseList? {
         return app.get(
-            "$TMDB_API_BASE/search/multi?api_key=$API_KEY&language=en-US&query=$query&page=$page&include_adult=${settingsForProvider.enableAdult}"
+            buildTmdbUrl(
+                "/search/multi",
+                "query" to query,
+                "page" to page.toString(),
+                "include_adult" to settingsForProvider.enableAdult.toString()
+            )
         ).parsedSafe<Results>()?.results?.mapNotNull { media ->
             media.toSearchResponse()
         }?.toNewSearchResponseList()
@@ -152,9 +185,15 @@ class Onurcvncs3Provider(private val sharedPref: SharedPreferences) : TmdbProvid
         val data = parseJson<Data>(url)
         val type = getType(data.type)
         val responseUrl = if (type == TvType.Movie) {
-            "$TMDB_API_BASE/movie/${data.id}?api_key=$API_KEY&append_to_response=keywords,credits,external_ids,videos,recommendations"
+            buildTmdbUrl(
+                "/movie/${data.id}",
+                "append_to_response" to "keywords,credits,external_ids,videos,recommendations"
+            )
         } else {
-            "$TMDB_API_BASE/tv/${data.id}?api_key=$API_KEY&append_to_response=keywords,credits,external_ids,videos,recommendations"
+            buildTmdbUrl(
+                "/tv/${data.id}",
+                "append_to_response" to "keywords,credits,external_ids,videos,recommendations"
+            )
         }
 
         val response = app.get(responseUrl).parsedSafe<MediaDetail>()
@@ -190,15 +229,19 @@ class Onurcvncs3Provider(private val sharedPref: SharedPreferences) : TmdbProvid
             ?.randomOrNull()
         val logoUrl = fetchTmdbLogoUrl(
             tmdbApi = TMDB_API_BASE,
-            apiKey = API_KEY,
+            apiKey = requireTmdbApiKey(),
             type = type,
             tmdbId = response.id,
-            appLangCode = "en"
+            appLangCode = TMDB_LANGUAGE
         )
 
         return if (type == TvType.TvSeries) {
             val episodes = response.seasons?.mapNotNull { season ->
-                app.get("$TMDB_API_BASE/${data.type}/${data.id}/season/${season.seasonNumber}?api_key=$API_KEY")
+                app.get(
+                    buildTmdbUrl(
+                        "/${data.type}/${data.id}/season/${season.seasonNumber}"
+                    )
+                )
                     .parsedSafe<MediaDetailEpisodes>()?.episodes?.map { episode ->
                         newEpisode(
                             LoadData(

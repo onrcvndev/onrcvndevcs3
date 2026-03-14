@@ -23,6 +23,7 @@ import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import com.lagradost.cloudstream3.CommonActivity.showToast
 import com.onurcvncs3.BuildConfig
 import com.onurcvncs3.Onurcvncs3Plugin
+import com.onurcvncs3.PREF_TMDB_API_KEY
 
 class SettingsFragment(
     plugin: Onurcvncs3Plugin,
@@ -74,8 +75,13 @@ class SettingsFragment(
         return addons
     }
 
-    private fun saveAddonsToPrefs(addons: List<String>) {
+    private fun loadTmdbApiKeyFromPrefs(): String {
+        return sharedPref.getString(PREF_TMDB_API_KEY, "")?.trim().orEmpty()
+    }
+
+    private fun saveSettingsToPrefs(tmdbApiKey: String, addons: List<String>) {
         sharedPref.edit {
+            putString(PREF_TMDB_API_KEY, tmdbApiKey)
             sharedPref.all.keys
                 .filter { it.startsWith("stremio_addon") }
                 .forEach { remove(it) }
@@ -95,8 +101,11 @@ class SettingsFragment(
     ): View {
         val root = getLayout("settings", inflater, container)
 
+        val tmdbApiKeyInput = root.findView<EditText>("tmdb_api_key_input")
         val stremioAddonInput = root.findView<EditText>("stremio_addon_input")
         val addAddonButton = root.findView<Button>("add_addon_button")
+        tmdbApiKeyInput.setText(loadTmdbApiKeyFromPrefs())
+        tmdbApiKeyInput.makeTvCompatible()
         stremioAddonInput.makeTvCompatible()
         addAddonButton.makeTvCompatible()
 
@@ -119,7 +128,13 @@ class SettingsFragment(
         saveButton.setImageDrawable(getDrawable("save_icon"))
         saveButton.makeTvCompatible()
         saveButton.setOnClickListener {
-            saveAddonsToPrefs(addonList)
+            val tmdbApiKey = tmdbApiKeyInput.text.toString().trim()
+            if (tmdbApiKey.isBlank()) {
+                showToast("TMDB API key gerekli.")
+                return@setOnClickListener
+            }
+
+            saveSettingsToPrefs(tmdbApiKey, addonList)
 
             AlertDialog.Builder(requireContext())
                 .setTitle("Restart Required")
@@ -142,9 +157,10 @@ class SettingsFragment(
         resetButton.setOnClickListener {
             AlertDialog.Builder(requireContext())
                 .setTitle("Reset")
-                .setMessage("This will delete all saved addons.")
+                .setMessage("This will delete the saved TMDB API key and all saved addons.")
                 .setPositiveButton("Reset") { _, _ ->
                     sharedPref.edit(commit = true) {
+                        remove(PREF_TMDB_API_KEY)
                         sharedPref.all.keys
                             .filter { it.startsWith("stremio_addon") }
                             .forEach { remove(it) }
@@ -155,6 +171,7 @@ class SettingsFragment(
                         addonList.clear()
                         addonAdapter.notifyItemRangeRemoved(0, size)
                     }
+                    tmdbApiKeyInput.text.clear()
                     stremioAddonInput.text.clear()
                     restartApp()
                 }
